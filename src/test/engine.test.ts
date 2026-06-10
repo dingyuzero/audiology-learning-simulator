@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { getCaseById } from "../data/cases";
 import type { AudiometerSettings, PrepState, ReportInterpretation, StudentThreshold, TestEvent } from "../domain/types";
 import { calculatePta, classifyType } from "../engine/audiology";
+import { buildGuideStep } from "../engine/guide";
 import { simulatePatientResponse } from "../engine/patient-response";
 import { scoreSession } from "../engine/scoring";
 
@@ -50,6 +51,24 @@ function threshold(
     masked,
     noResponse: false,
     timestamp: "2026-06-10T10:00:00+08:00"
+  };
+}
+
+function event(settingsOverride: Partial<AudiometerSettings>, responded = true): TestEvent {
+  return {
+    id: "event-1",
+    timestamp: "2026-06-10T10:00:00+08:00",
+    elapsedSeconds: 10,
+    caseId: "C01",
+    settings: settings(settingsOverride),
+    response: {
+      responded,
+      latencyMs: responded ? 520 : null,
+      probability: responded ? 0.9 : 0.1,
+      effectiveThreshold: 20,
+      heardBy: responded ? "right" : "none",
+      notes: []
+    }
   };
 }
 
@@ -135,3 +154,57 @@ describe("scoring engine", () => {
   });
 });
 
+describe("guided coach", () => {
+  it("starts new students with pre-test preparation", () => {
+    const caseData = getCaseById("C01");
+    const guide = buildGuideStep({
+      caseData,
+      prep: {
+        caseReview: false,
+        otoscopy: false,
+        instructions: false,
+        betterEar: false,
+        transducerCheck: false
+      },
+      settings: settings({ ear: "right", route: "air", frequencyHz: 1000, levelDbHl: 40 }),
+      events: [],
+      thresholds: [],
+      interpretationReady: false,
+      reportReady: false
+    });
+
+    expect(guide.action).toBe("complete-prep");
+    expect(guide.profile.title).toBe("标准配合成人");
+  });
+
+  it("labels unreliable patients with a different learning route", () => {
+    const caseData = getCaseById("C10");
+    const guide = buildGuideStep({
+      caseData,
+      prep: prepComplete,
+      settings: settings({ ear: "right", route: "air", frequencyHz: 1000, levelDbHl: 40 }),
+      events: [],
+      thresholds: [],
+      interpretationReady: false,
+      reportReady: false
+    });
+
+    expect(guide.profile.title).toBe("反应不稳定人群");
+    expect(guide.profile.flow).toContain("识别假阳性/漏按");
+  });
+
+  it("asks for a new tone after the student changes level", () => {
+    const caseData = getCaseById("C01");
+    const guide = buildGuideStep({
+      caseData,
+      prep: prepComplete,
+      settings: settings({ ear: "right", route: "air", frequencyHz: 1000, levelDbHl: 30 }),
+      events: [event({ ear: "right", route: "air", frequencyHz: 1000, levelDbHl: 40 }, true)],
+      thresholds: [],
+      interpretationReady: false,
+      reportReady: false
+    });
+
+    expect(guide.action).toBe("give-tone");
+  });
+});

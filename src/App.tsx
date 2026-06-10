@@ -1,8 +1,9 @@
-import { ClipboardList, GraduationCap, RotateCcw, ShieldCheck, Stethoscope } from "lucide-react";
+import { GraduationCap, RotateCcw, ShieldCheck, Stethoscope } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Audiogram } from "./components/Audiogram";
 import { AudiometerPanel } from "./components/AudiometerPanel";
 import { EventLog } from "./components/EventLog";
+import { GuidedCoach, MobileGuideBar } from "./components/GuidedCoach";
 import { PatientPanel } from "./components/PatientPanel";
 import { ReportPanel } from "./components/ReportPanel";
 import { CASES } from "./data/cases";
@@ -17,6 +18,7 @@ import type {
   TestEvent
 } from "./domain/types";
 import { thresholdKey } from "./engine/audiology";
+import { buildGuideStep, type GuideAction, type GuideStep } from "./engine/guide";
 import { simulatePatientResponse } from "./engine/patient-response";
 import { buildAutoInterpretation, generateReport } from "./engine/report";
 
@@ -66,6 +68,20 @@ export function App() {
   const caseData = useMemo(() => CASES.find((item) => item.id === selectedCaseId) ?? CASES[0], [selectedCaseId]);
   const lastEvent = events.length > 0 ? events[events.length - 1] : null;
   const lastResponse = lastEvent?.response ?? null;
+  const interpretationReady = Boolean(interpretation.right || interpretation.left || interpretation.comments);
+  const guide = useMemo(
+    () =>
+      buildGuideStep({
+        caseData,
+        prep,
+        settings,
+        events,
+        thresholds,
+        interpretationReady,
+        reportReady: Boolean(report)
+      }),
+    [caseData, prep, settings, events, thresholds, interpretationReady, report]
+  );
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -136,6 +152,18 @@ export function App() {
     setReport(null);
   };
 
+  const scrollToPanel = (panel: GuideStep["focusPanel"]) => {
+    const selectorByPanel: Record<GuideStep["focusPanel"], string> = {
+      patient: ".patient-panel",
+      device: ".device-panel",
+      audiogram: ".audiogram-panel",
+      report: ".report-panel"
+    };
+    window.setTimeout(() => {
+      document.querySelector(selectorByPanel[panel])?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
+  };
+
   const handleAutoFill = () => {
     setInterpretation(buildAutoInterpretation(events, thresholds));
   };
@@ -147,6 +175,89 @@ export function App() {
         : buildAutoInterpretation(events, thresholds);
     setInterpretation(finalInterpretation);
     setReport(generateReport(caseData, prep, events, thresholds, finalInterpretation));
+  };
+
+  const handleGuideAction = (action: GuideAction, currentGuide: GuideStep) => {
+    const target = currentGuide.target;
+
+    if (action === "complete-prep") {
+      setPrep({
+        caseReview: true,
+        otoscopy: true,
+        instructions: true,
+        betterEar: true,
+        transducerCheck: true
+      });
+      scrollToPanel("device");
+      return;
+    }
+
+    if (action === "setup-air-start") {
+      setSettings({
+        ...settings,
+        ear: "right",
+        route: "air",
+        frequencyHz: 1000,
+        levelDbHl: 40,
+        transducer: "supra",
+        maskingEnabled: false
+      });
+      scrollToPanel("device");
+      return;
+    }
+
+    if ((action === "setup-target" || action === "setup-masking") && target) {
+      setSettings({
+        ...settings,
+        ear: target.ear,
+        route: target.route,
+        frequencyHz: target.frequencyHz,
+        levelDbHl: target.route === "bone" ? 30 : 40,
+        transducer: target.route === "bone" ? "bone" : settings.transducer === "bone" ? "supra" : settings.transducer,
+        maskingEnabled: Boolean(target.masking),
+        maskingLevelDb: target.masking ? Math.max(settings.maskingLevelDb, 50) : settings.maskingLevelDb
+      });
+      scrollToPanel("device");
+      return;
+    }
+
+    if (action === "give-tone") {
+      handleGiveTone();
+      scrollToPanel("device");
+      return;
+    }
+
+    if (action === "lower-10") {
+      setSettings((current) => ({ ...current, levelDbHl: Math.max(-10, current.levelDbHl - 10) }));
+      scrollToPanel("device");
+      return;
+    }
+
+    if (action === "raise-10") {
+      setSettings((current) => ({ ...current, levelDbHl: Math.min(120, current.levelDbHl + 10) }));
+      scrollToPanel("device");
+      return;
+    }
+
+    if (action === "record-threshold") {
+      upsertThreshold(false);
+      scrollToPanel("audiogram");
+      return;
+    }
+
+    if (action === "auto-report") {
+      handleAutoFill();
+      scrollToPanel("report");
+      return;
+    }
+
+    if (action === "submit-report") {
+      handleGenerateReport();
+      scrollToPanel("report");
+      return;
+    }
+
+    scrollToPanel(currentGuide.focusPanel);
   };
 
   const currentWarnings = lastEvent?.response.notes.filter((note: string) =>
@@ -209,6 +320,8 @@ export function App() {
           onPrepChange={setPrep}
         />
 
+        <GuidedCoach mode={mode} guide={guide} warnings={currentWarnings ?? []} onAction={handleGuideAction} />
+
         <AudiometerPanel
           settings={settings}
           lastResponse={lastResponse}
@@ -219,46 +332,6 @@ export function App() {
         />
 
         <Audiogram thresholds={thresholds} />
-
-        <section className="panel teaching-panel" aria-label="教学提示">
-          <div className="panel-title">
-            <div>
-              <p className="eyebrow">Teaching</p>
-              <h2>{mode === "practice" ? "教学提示" : "考核状态"}</h2>
-            </div>
-            <ClipboardList size={18} />
-          </div>
-          {mode === "practice" ? (
-            <>
-              <div className="tip-stack">
-                {caseData.answer.keyPoints.map((point) => (
-                  <span key={point}>{point}</span>
-                ))}
-              </div>
-              {currentWarnings && currentWarnings.length > 0 && (
-                <div className="warning-box">
-                  <strong>当前风险</strong>
-                  <p>{currentWarnings.join(" · ")}</p>
-                </div>
-              )}
-              {caseData.answer.requiredMasking.length > 0 && (
-                <div className="masking-needs">
-                  <strong>必要掩蔽点</strong>
-                  {caseData.answer.requiredMasking.slice(0, 4).map((item) => (
-                    <span key={`${item.ear}-${item.route}-${item.frequencyHz}`}>
-                      {item.ear === "right" ? "右耳" : "左耳"} {item.route === "air" ? "气导" : "骨导"} {item.frequencyHz} Hz
-                    </span>
-                  ))}
-                </div>
-              )}
-            </>
-          ) : (
-            <div className="exam-box">
-              <strong>事件日志已记录</strong>
-              <p>当前会话使用固定随机种子，提交后生成评分和过程复盘。</p>
-            </div>
-          )}
-        </section>
 
         <EventLog events={events} />
 
@@ -274,6 +347,8 @@ export function App() {
           onGenerate={handleGenerateReport}
         />
       </main>
+
+      <MobileGuideBar mode={mode} guide={guide} onAction={handleGuideAction} />
     </div>
   );
 }
