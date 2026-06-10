@@ -23,7 +23,8 @@ export const stimulusLabel: Record<Stimulus, string> = {
 };
 
 export const modeLabel: Record<Mode, string> = {
-  practice: "练习",
+  teaching: "教学",
+  practice: "自由练习",
   exam: "考核"
 };
 
@@ -36,4 +37,3 @@ export const reliabilityLabel: Record<Reliability, string> = {
 export function formatDb(level: number) {
   return `${level} dB HL`;
 }
-

@@ -112,6 +112,161 @@ input[type="checkbox"] {
   min-height: 100vh;
 }
 
+.home-screen {
+  min-height: 100vh;
+  padding: 22px;
+  background: var(--bg);
+}
+
+.home-main {
+  width: min(1120px, 100%);
+  margin: 0 auto;
+  display: grid;
+  gap: 16px;
+}
+
+.home-intro,
+.home-case-panel {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: var(--shadow);
+}
+
+.home-intro h1 {
+  margin: 0;
+  font-size: 28px;
+  line-height: 1.15;
+}
+
+.home-intro p:last-child {
+  margin: 6px 0 0;
+  color: var(--muted);
+}
+
+.home-mark,
+.home-mode-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  color: #fff;
+  background: var(--accent);
+}
+
+.home-case-panel {
+  justify-content: space-between;
+  align-items: end;
+}
+
+.home-case-panel .case-picker {
+  min-width: min(420px, 100%);
+}
+
+.home-case-summary {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  text-align: right;
+}
+
+.home-case-summary span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.home-mode-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.home-mode-card {
+  min-height: 310px;
+  padding: 16px;
+  display: grid;
+  grid-template-rows: auto 1fr auto auto;
+  align-items: start;
+  justify-content: stretch;
+  gap: 14px;
+  text-align: left;
+  background: #fff;
+  border-color: var(--line);
+  box-shadow: var(--shadow);
+}
+
+.home-mode-card:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 44px rgba(22, 32, 38, 0.12);
+}
+
+.home-mode-card.practice .home-mode-icon {
+  background: #315a9f;
+}
+
+.home-mode-card.exam .home-mode-icon {
+  background: #7c4f17;
+}
+
+.home-mode-copy {
+  display: grid;
+  gap: 8px;
+}
+
+.home-mode-copy > span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.home-mode-copy strong {
+  display: block;
+  font-size: 23px;
+  line-height: 1.18;
+}
+
+.home-mode-copy em {
+  color: #3c4a53;
+  font-style: normal;
+  line-height: 1.55;
+}
+
+.home-mode-points {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.home-mode-points span {
+  min-height: 28px;
+  padding: 5px 8px;
+  border-radius: 8px;
+  color: #34434b;
+  background: var(--panel-soft);
+  border: 1px solid var(--line);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.home-start {
+  width: 100%;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border-radius: 8px;
+  color: #fff;
+  background: var(--accent);
+}
+
 .topbar {
   position: sticky;
   top: 0;
@@ -231,6 +386,10 @@ input[type="checkbox"] {
   min-width: 92px;
 }
 
+.home-button {
+  min-width: 82px;
+}
+
 .workspace {
   width: min(1760px, calc(100% - 28px));
   margin: 18px auto 34px;
@@ -251,6 +410,40 @@ input[type="checkbox"] {
   padding: 16px;
   min-width: 0;
   scroll-margin-top: 88px;
+}
+
+.mode-teaching .panel {
+  scroll-margin-top: 96px;
+}
+
+.teaching-focus-patient .patient-panel,
+.teaching-focus-device .device-panel,
+.teaching-focus-audiogram .audiogram-panel,
+.teaching-focus-report .report-panel {
+  position: relative;
+  border-color: #d99a2b;
+  box-shadow:
+    0 0 0 3px rgba(217, 154, 43, 0.16),
+    var(--shadow);
+}
+
+.teaching-focus-patient .patient-panel::before,
+.teaching-focus-device .device-panel::before,
+.teaching-focus-audiogram .audiogram-panel::before,
+.teaching-focus-report .report-panel::before {
+  content: "下一步";
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  z-index: 1;
+  min-height: 28px;
+  padding: 5px 9px;
+  border-radius: 8px;
+  color: #5b3a08;
+  background: #fff3d8;
+  border: 1px solid #e7bd70;
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .patient-panel {
@@ -756,6 +949,16 @@ td:last-child {
   background: linear-gradient(180deg, #ffffff 0%, #fbfefd 100%);
 }
 
+.exam-panel {
+  border-color: #f0c78a;
+  background: linear-gradient(180deg, #ffffff 0%, #fffaf0 100%);
+}
+
+.practice-panel {
+  border-color: #c9d4e5;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+}
+
 .guide-profile {
   display: grid;
   gap: 10px;
@@ -808,6 +1011,21 @@ td:last-child {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #fff;
+}
+
+.step-pointer {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 32px;
+  margin-bottom: 10px;
+  padding: 6px 9px;
+  border-radius: 8px;
+  color: #17443f;
+  border: 1px solid #b8dcd7;
+  background: var(--accent-soft);
+  font-size: 13px;
+  font-weight: 800;
 }
 
 .guide-phase {
@@ -903,6 +1121,52 @@ td:last-child {
 .warning-box p,
 .exam-box p {
   margin: 6px 0 0;
+  line-height: 1.45;
+}
+
+.practice-box {
+  border-color: #c9d4e5;
+  color: #26384c;
+  background: #eef5ff;
+}
+
+.score-point-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.score-point {
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.score-point > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.score-point span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.score-point meter {
+  width: 100%;
+  height: 10px;
+  margin-top: 8px;
+}
+
+.score-point p {
+  margin: 7px 0 0;
+  color: #5d6870;
+  font-size: 12px;
   line-height: 1.45;
 }
 
@@ -1048,6 +1312,56 @@ td:last-child {
     font-size: 16px;
   }
 
+  .home-screen {
+    padding: 10px;
+  }
+
+  .home-main {
+    gap: 10px;
+  }
+
+  .home-intro,
+  .home-case-panel {
+    align-items: flex-start;
+    padding: 12px;
+  }
+
+  .home-intro {
+    gap: 10px;
+  }
+
+  .home-intro h1 {
+    font-size: 22px;
+  }
+
+  .home-case-panel {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .home-case-panel .case-picker {
+    min-width: 0;
+  }
+
+  .home-case-summary {
+    text-align: left;
+  }
+
+  .home-mode-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .home-mode-card {
+    min-height: auto;
+    padding: 12px;
+    gap: 11px;
+  }
+
+  .home-mode-copy strong {
+    font-size: 20px;
+  }
+
   .topbar {
     position: sticky;
     align-items: flex-start;
@@ -1090,6 +1404,7 @@ td:last-child {
     grid-auto-columns: 1fr;
   }
 
+  .home-button,
   .reset-button {
     width: 100%;
   }

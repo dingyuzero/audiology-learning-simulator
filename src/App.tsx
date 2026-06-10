@@ -1,9 +1,10 @@
-import { GraduationCap, RotateCcw, ShieldCheck, Stethoscope } from "lucide-react";
+import { BookOpen, Home, MousePointerClick, RotateCcw, ShieldCheck, Stethoscope } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Audiogram } from "./components/Audiogram";
 import { AudiometerPanel } from "./components/AudiometerPanel";
 import { EventLog } from "./components/EventLog";
 import { GuidedCoach, MobileGuideBar } from "./components/GuidedCoach";
+import { HomeScreen } from "./components/HomeScreen";
 import { PatientPanel } from "./components/PatientPanel";
 import { ReportPanel } from "./components/ReportPanel";
 import { CASES } from "./data/cases";
@@ -48,13 +49,16 @@ const defaultInterpretation: ReportInterpretation = {
   comments: ""
 };
 
+const modes: Mode[] = ["teaching", "practice", "exam"];
+
 function createSessionSeed(caseId: string, mode: Mode) {
   return mode === "exam" ? `${caseId}:exam-fixed-seed` : `${caseId}:${Date.now()}`;
 }
 
 export function App() {
+  const [homeOpen, setHomeOpen] = useState(true);
   const [selectedCaseId, setSelectedCaseId] = useState(CASES[0].id);
-  const [mode, setMode] = useState<Mode>("practice");
+  const [mode, setMode] = useState<Mode>("teaching");
   const [settings, setSettings] = useState<AudiometerSettings>(defaultSettings);
   const [prep, setPrep] = useState<PrepState>(defaultPrep);
   const [events, setEvents] = useState<TestEvent[]>([]);
@@ -63,7 +67,7 @@ export function App() {
   const [report, setReport] = useState<SimulatedReport | null>(null);
   const [startedAt, setStartedAt] = useState(Date.now());
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const [sessionSeed, setSessionSeed] = useState(createSessionSeed(CASES[0].id, "practice"));
+  const [sessionSeed, setSessionSeed] = useState(createSessionSeed(CASES[0].id, "teaching"));
 
   const caseData = useMemo(() => CASES.find((item) => item.id === selectedCaseId) ?? CASES[0], [selectedCaseId]);
   const lastEvent = events.length > 0 ? events[events.length - 1] : null;
@@ -106,6 +110,12 @@ export function App() {
   const handleModeChange = (nextMode: Mode) => {
     setMode(nextMode);
     resetSession(selectedCaseId, nextMode);
+  };
+
+  const handleStartMode = (nextMode: Mode) => {
+    setMode(nextMode);
+    resetSession(selectedCaseId, nextMode);
+    setHomeOpen(false);
   };
 
   const handleCaseChange = (caseId: string) => {
@@ -170,7 +180,7 @@ export function App() {
 
   const handleGenerateReport = () => {
     const finalInterpretation =
-      interpretation.right || interpretation.left || interpretation.comments
+      mode === "exam" || interpretation.right || interpretation.left || interpretation.comments
         ? interpretation
         : buildAutoInterpretation(events, thresholds);
     setInterpretation(finalInterpretation);
@@ -264,8 +274,21 @@ export function App() {
     ["cross-hearing-risk", "overmasking-risk", "bone-unmasked-non-specific", "tinnitus-interference"].includes(note)
   );
 
+  if (homeOpen) {
+    return (
+      <HomeScreen
+        cases={CASES}
+        selectedCaseId={selectedCaseId}
+        onCaseChange={setSelectedCaseId}
+        onStart={handleStartMode}
+      />
+    );
+  }
+
+  const focusClass = mode === "teaching" ? `teaching-focus-${guide.focusPanel}` : "";
+
   return (
-    <div className="app-shell">
+    <div className={`app-shell session-shell mode-${mode} ${focusClass}`}>
       <header className="topbar">
         <div className="brand">
           <div className="brand-mark">
@@ -278,6 +301,11 @@ export function App() {
         </div>
 
         <div className="top-controls">
+          <button type="button" className="home-button" onClick={() => setHomeOpen(true)} title="返回首页">
+            <Home size={17} />
+            首页
+          </button>
+
           <label className="case-picker">
             <span>病例</span>
             <select value={selectedCaseId} onChange={(event) => handleCaseChange(event.target.value)}>
@@ -290,14 +318,14 @@ export function App() {
           </label>
 
           <div className="mode-switch" aria-label="模式">
-            {(["practice", "exam"] as Mode[]).map((item) => (
+            {modes.map((item) => (
               <button
                 key={item}
                 type="button"
                 className={mode === item ? "selected" : ""}
                 onClick={() => handleModeChange(item)}
               >
-                {item === "practice" ? <GraduationCap size={16} /> : <ShieldCheck size={16} />}
+                {item === "teaching" ? <MousePointerClick size={16} /> : item === "practice" ? <BookOpen size={16} /> : <ShieldCheck size={16} />}
                 {modeLabel[item]}
               </button>
             ))}
@@ -320,7 +348,13 @@ export function App() {
           onPrepChange={setPrep}
         />
 
-        <GuidedCoach mode={mode} guide={guide} warnings={currentWarnings ?? []} onAction={handleGuideAction} />
+        <GuidedCoach
+          mode={mode}
+          guide={guide}
+          warnings={currentWarnings ?? []}
+          score={report?.score ?? null}
+          onAction={handleGuideAction}
+        />
 
         <AudiometerPanel
           settings={settings}

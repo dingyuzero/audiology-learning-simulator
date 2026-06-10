@@ -9,7 +9,7 @@ import type {
 } from "../domain/types";
 import { calculatePta } from "../engine/audiology";
 import { coverageSummary } from "../engine/scoring";
-import { reliabilityLabel } from "../domain/labels";
+import { modeLabel, reliabilityLabel } from "../domain/labels";
 
 interface ReportPanelProps {
   caseData: AudiologyCase;
@@ -47,7 +47,7 @@ export function ReportPanel({
         </div>
         <div className="status-pill">
           <FileText size={15} />
-          教学模拟
+          {modeLabel[mode]}
         </div>
       </div>
 
@@ -111,10 +111,12 @@ export function ReportPanel({
       </div>
 
       <div className="action-row">
-        <button type="button" onClick={onAutoFill} title="自动填写报告">
-          <RefreshCw size={17} />
-          自动填写
-        </button>
+        {mode !== "exam" && (
+          <button type="button" onClick={onAutoFill} title="自动填写报告">
+            <RefreshCw size={17} />
+            自动填写
+          </button>
+        )}
         <button className="primary-action" type="button" onClick={onGenerate} title="提交报告">
           <Send size={17} />
           提交报告
@@ -158,7 +160,7 @@ export function ReportPanel({
         </div>
       )}
 
-      {mode === "practice" && (
+      {(mode === "teaching" || (mode === "practice" && report)) && (
         <div className="teacher-notes">
           <div className="subhead">
             <Star size={16} />
@@ -172,4 +174,3 @@ export function ReportPanel({
     </section>
   );
 }
-

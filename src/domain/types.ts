@@ -1,6 +1,6 @@
 export type Ear = "right" | "left";
 export type Route = "air" | "bone";
-export type Mode = "practice" | "exam";
+export type Mode = "teaching" | "practice" | "exam";
 export type Stimulus = "steady" | "pulsed" | "warble";
 export type Transducer = "supra" | "insert" | "bone";
 export type Reliability = "good" | "fair" | "poor";
@@ -137,4 +137,3 @@ export interface SimulatedReport {
   score: ScoreResult;
   teachingFeedback: string[];
 }
-
